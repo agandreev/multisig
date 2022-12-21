@@ -23,15 +23,14 @@ contract Multisig {
     string constant private MSG_PREFIX = "special_secret";
 
     address[] private _signers;
-    mapping(address => bool) private _isSigner;
     uint private _threshold;
 
     constructor(address[] memory _newSigners, uint _newThreshold) {
         require(_newThreshold > 1, "there should be at least 2 signer");
 
         for (uint i=0; i < _newSigners.length; i++) {
-            if (!_isSigner[_newSigners[i]]) {
-                _isSigner[_newSigners[i]] = true;
+            (, bool exists) = _containAddress(_signers, _newSigners[i]);
+            if (!exists) {
                 _signers.push(_newSigners[i]);
             }
         }
@@ -101,7 +100,8 @@ contract Multisig {
         bytes32 digest = _processWithdrawalInfo(_txn, _nonce);
 
         signerAddress = ECDSA.recover(digest, _signature);
-        require(_isSigner[signerAddress], "not part of consortium");
+        (, bool exists) = _containAddress(_signers, signerAddress);
+        require(exists, "not part of consortium");
         nonce = _nonce;
     }
 
